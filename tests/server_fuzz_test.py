@@ -44,7 +44,7 @@ _text_st = st.text(
 _any_str_st = st.text(min_size=0, max_size=500)
 
 # A valid single extraction for use inside examples
-_extraction_st = st.fixed_dict(
+_extraction_st = st.fixed_dictionaries(
     {
         "extraction_class": st.text(
             alphabet=string.ascii_lowercase + "_", min_size=1, max_size=50
@@ -54,7 +54,7 @@ _extraction_st = st.fixed_dict(
 )
 
 # A valid example entry
-_example_st = st.fixed_dict(
+_example_st = st.fixed_dictionaries(
     {
         "text": _text_st,
         "extractions": st.lists(_extraction_st, min_size=1, max_size=5),
@@ -62,7 +62,7 @@ _example_st = st.fixed_dict(
 )
 
 # A minimal valid payload with generated text and prompt
-_valid_payload_st = st.fixed_dict(
+_valid_payload_st = st.fixed_dictionaries(
     {
         "text": _text_st,
         "prompt_description": _text_st,
@@ -386,7 +386,7 @@ class TestErrorEnvelopeShape(absltest.TestCase):
     """Every error response from the server must have the same envelope shape."""
 
     @given(
-        payload=st.fixed_dict(
+        payload=st.fixed_dictionaries(
             {
                 "text": _any_str_st,
                 "prompt_description": _any_str_st,

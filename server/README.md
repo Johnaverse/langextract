@@ -178,7 +178,7 @@ All errors share the same envelope shape:
 |---|---|---|
 | `400` | `INFERENCE_CONFIG_ERROR` | Bad model / API-key configuration. |
 | `413` | `REQUEST_TOO_LARGE` | Body exceeds `MAX_BODY_SIZE_MB`. |
-| `422` | `INVALID_INPUT` | Validation error in request fields. |
+| `422` | `INVALID_INPUT` | Pydantic field validation error or bad input value. |
 | `422` | `PROMPT_ALIGNMENT_ERROR` | Few-shot examples failed alignment checks. |
 | `502` | `URL_FETCH_ERROR` | Failed to fetch the provided URL. |
 | `502` | `INFERENCE_RUNTIME_ERROR` | LLM call failed at runtime. |

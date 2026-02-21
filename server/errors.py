@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import requests as http_requests
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from langextract.core import exceptions as lx_exc
@@ -18,6 +19,12 @@ def _err(status: int, code: str, message: str) -> JSONResponse:
 
 def register_handlers(app: FastAPI) -> None:
     """Register all exception handlers on the FastAPI app."""
+
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_handler(
+        req: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        return _err(422, "INVALID_INPUT", str(exc))
 
     @app.exception_handler(ValueError)
     async def value_error_handler(req: Request, exc: ValueError) -> JSONResponse:
