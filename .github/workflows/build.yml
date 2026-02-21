@@ -1,0 +1,126 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write  # Required to push to ghcr.io
+
+jobs:
+  server-tests:
+    name: Server unit & fuzz tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for SonarQube blame data
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install server dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt
+
+      - name: Run server unit tests
+        run: |
+          pytest tests/server_test.py -v \
+            --tb=short \
+            --junit-xml=reports/server-unit-results.xml \
+            --cov=server \
+            --cov-report=xml:reports/server-coverage.xml \
+            --cov-report=term-missing
+
+      - name: Run server fuzz tests
+        run: |
+          pytest tests/server_fuzz_test.py -v \
+            --tb=short \
+            --junit-xml=reports/server-fuzz-results.xml
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-reports
+          path: reports/
+          retention-days: 7
+
+  sonarqube:
+    name: Build and analyze
+    runs-on: ubuntu-latest
+    needs: server-tests
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: server-test-reports
+          path: reports/
+
+      - uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # If you wish to fail your job when the Quality Gate is red, uncomment the
+      # following lines. This would typically be used to fail a deployment.
+      # - uses: SonarSource/sonarqube-quality-gate-action@v1
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker-release:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: server-tests  # Only release if tests pass; runs in parallel with sonarqube
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/server
+          tags: |
+            # Always tag latest on main
+            type=raw,value=latest
+            # Short commit SHA  (e.g. sha-a1b2c3d)
+            type=sha,prefix=sha-,format=short
+            # Calendar version  (e.g. 2026.02.20)
+            type=raw,value={{date 'YYYY.MM.DD'}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
