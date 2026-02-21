@@ -110,6 +110,7 @@ testpaths = ["tests"]
 python_files = "*_test.py"
 python_classes = "Test*"
 python_functions = "test_*"
+pythonpath = ["."]
 # Show extra test summary info
 addopts = "-ra"
 markers = [
