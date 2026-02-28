@@ -19,8 +19,8 @@ _DEFAULT_MAX_CHAR_BUFFER: int = int(os.getenv("LANGEXTRACT_MAX_CHAR_BUFFER", "10
 
 
 def _default_temperature() -> float | None:
-    raw = os.getenv("LANGEXTRACT_TEMPERATURE")
-    return float(raw) if raw is not None else None
+    raw = os.getenv("LANGEXTRACT_TEMPERATURE", "").strip()
+    return float(raw) if raw else None
 
 
 # ---------------------------------------------------------------------------
