@@ -54,6 +54,8 @@ ENV LANGEXTRACT_MAX_CHAR_BUFFER=1000
 ENV LANGEXTRACT_MODEL_URL=
 
 # ---- Provider-specific (read directly by LangExtract) ----
+# Local provider toggle: "lmstudio" or "ollama" (controls which gets priority)
+ENV LANGEXTRACT_LOCAL_PROVIDER=lmstudio
 # Ollama base URL — used automatically for ollama/* model IDs
 ENV OLLAMA_BASE_URL=http://localhost:11434
 

@@ -16,24 +16,22 @@
 
 This module defines all patterns and priorities for built-in providers
 in one place to avoid duplication.
+
+The ``LANGEXTRACT_LOCAL_PROVIDER`` environment variable controls which
+local provider (``ollama`` or ``lmstudio``) takes priority when model IDs
+match both.  Set to ``"ollama"`` or ``"lmstudio"`` (default: ``"lmstudio"``).
 """
 
-# Gemini provider patterns
-GEMINI_PATTERNS = (r'^gemini',)
-GEMINI_PRIORITY = 10
+import os
 
-# OpenAI provider patterns
-OPENAI_PATTERNS = (
-    r'^gpt-4',
-    r'^gpt4\.',
-    r'^gpt-5',
-    r'^gpt5\.',
-)
-OPENAI_PRIORITY = 10
+# ---------------------------------------------------------------------------
+# Local-provider toggle
+# ---------------------------------------------------------------------------
+_LOCAL_PROVIDER = os.getenv("LANGEXTRACT_LOCAL_PROVIDER", "lmstudio").strip().lower()
 
-# Ollama provider patterns
-OLLAMA_PATTERNS = (
-    # Standard Ollama naming patterns
+# Shared patterns for local/open-source models used by both Ollama and LM Studio
+_LOCAL_MODEL_PATTERNS = (
+    # Standard naming patterns
     r'^gemma',  # gemma2:2b, gemma2:9b, etc.
     r'^llama',  # llama3.2:1b, llama3.1:8b, etc.
     r'^mistral',  # mistral:7b, mistral-nemo:12b, etc.
@@ -61,4 +59,37 @@ OLLAMA_PATTERNS = (
     r'^TinyLlama/',
     r'^WizardLM/',
 )
-OLLAMA_PRIORITY = 10
+
+# ---------------------------------------------------------------------------
+# Gemini
+# ---------------------------------------------------------------------------
+GEMINI_PATTERNS = (r'^gemini',)
+GEMINI_PRIORITY = 10
+
+# ---------------------------------------------------------------------------
+# OpenAI
+# ---------------------------------------------------------------------------
+OPENAI_PATTERNS = (
+    r'^gpt-4',
+    r'^gpt4\.',
+    r'^gpt-5',
+    r'^gpt5\.',
+)
+OPENAI_PRIORITY = 10
+
+# ---------------------------------------------------------------------------
+# Ollama  —  uses shared local patterns
+# ---------------------------------------------------------------------------
+OLLAMA_PATTERNS = _LOCAL_MODEL_PATTERNS
+OLLAMA_PRIORITY = 15 if _LOCAL_PROVIDER == "ollama" else 5
+
+# ---------------------------------------------------------------------------
+# LM Studio  —  uses shared local patterns + LM Studio-specific prefixes
+# ---------------------------------------------------------------------------
+LMSTUDIO_PATTERNS = (
+    r'^lmstudio/',  # lmstudio/model-name
+    r'^lmstudio:',  # lmstudio:model-name
+    r'^bartowski/',  # bartowski quantized models
+    r'^lmstudio-community/',  # lmstudio-community models
+) + _LOCAL_MODEL_PATTERNS
+LMSTUDIO_PRIORITY = 15 if _LOCAL_PROVIDER == "lmstudio" else 5

@@ -23,7 +23,7 @@ from server.models import (
 router = APIRouter()
 
 # Single source of truth — imported by main.py to keep version consistent.
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 
 # ---------------------------------------------------------------------------

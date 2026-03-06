@@ -34,6 +34,7 @@ __all__ = [
     "gemini",
     "openai",
     "ollama",
+    "lmstudio",
     "router",
     "registry",  # Backward compat
     "schemas",
