@@ -147,8 +147,8 @@ class LMStudioLanguageModel(base_model.BaseLanguageModel):
       if temp is not None:
         api_params['temperature'] = temp
 
-      if self.format_type == data.FormatType.JSON:
-        api_params.setdefault('response_format', {'type': 'json_object'})
+      # Note: LM Studio does not support response_format 'json_object'.
+      # JSON output is guided by the system prompt instead.
 
       if (v := config.get('max_output_tokens')) is not None:
         api_params['max_tokens'] = v
@@ -159,7 +159,6 @@ class LMStudioLanguageModel(base_model.BaseLanguageModel):
           'presence_penalty',
           'seed',
           'stop',
-          'response_format',
       ]:
         if (v := config.get(key)) is not None:
           api_params[key] = v
@@ -204,7 +203,6 @@ class LMStudioLanguageModel(base_model.BaseLanguageModel):
         'presence_penalty',
         'seed',
         'stop',
-        'response_format',
     ]:
       if key in merged_kwargs:
         config[key] = merged_kwargs[key]
