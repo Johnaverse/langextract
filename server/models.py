@@ -12,8 +12,8 @@ from pydantic import BaseModel, Field, model_validator
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MODEL_ID: str = os.getenv("LANGEXTRACT_MODEL_ID", "gemini-2.5-flash")
-_DEFAULT_API_KEY: str | None = os.getenv("LANGEXTRACT_API_KEY")
-_DEFAULT_MODEL_URL: str | None = os.getenv("LANGEXTRACT_MODEL_URL")
+_DEFAULT_API_KEY: str | None = os.getenv("LANGEXTRACT_API_KEY") or None
+_DEFAULT_MODEL_URL: str | None = os.getenv("LANGEXTRACT_MODEL_URL") or None
 
 _DEFAULT_MAX_CHAR_BUFFER: int = int(os.getenv("LANGEXTRACT_MAX_CHAR_BUFFER", "1000"))
 
