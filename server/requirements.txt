@@ -1,5 +1,5 @@
 # Install langextract from the local repo
--e .
+-e .[openai]
 
 # Web server
 fastapi>=0.111.0
