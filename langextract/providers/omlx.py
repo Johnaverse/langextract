@@ -83,6 +83,7 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
       format_type: data.FormatType = data.FormatType.JSON,
       temperature: float | None = None,
       max_workers: int = 10,
+      api_key: str | None = None,
       **kwargs,
   ) -> None:
     """Initialize the oMLX language model.
@@ -93,6 +94,7 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
       format_type: Output format (JSON or YAML).
       temperature: Sampling temperature.
       max_workers: Maximum number of parallel API calls.
+      api_key: API key for the oMLX server. Falls back to OMLX_API_KEY env var.
       **kwargs: Additional parameters passed through.
     """
     try:
@@ -110,9 +112,10 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
     self.temperature = temperature
     self.max_workers = max_workers
 
-    # oMLX doesn't require an API key but OpenAI client needs one
+    # Use api_key from request, then env var, then placeholder
+    resolved_api_key = api_key or os.getenv('OMLX_API_KEY') or 'omlx'
     self._client = openai.OpenAI(
-        api_key=os.getenv('OMLX_API_KEY', 'omlx'),
+        api_key=resolved_api_key,
         base_url=self.base_url,
     )
 

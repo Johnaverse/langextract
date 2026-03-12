@@ -80,6 +80,7 @@ class LMStudioLanguageModel(base_model.BaseLanguageModel):
       format_type: data.FormatType = data.FormatType.JSON,
       temperature: float | None = None,
       max_workers: int = 10,
+      api_key: str | None = None,
       **kwargs,
   ) -> None:
     """Initialize the LM Studio language model.
@@ -90,6 +91,7 @@ class LMStudioLanguageModel(base_model.BaseLanguageModel):
       format_type: Output format (JSON or YAML).
       temperature: Sampling temperature.
       max_workers: Maximum number of parallel API calls.
+      api_key: API key for the LM Studio server. Falls back to 'lm-studio' placeholder.
       **kwargs: Additional parameters passed through.
     """
     try:
@@ -107,9 +109,9 @@ class LMStudioLanguageModel(base_model.BaseLanguageModel):
     self.temperature = temperature
     self.max_workers = max_workers
 
-    # LM Studio doesn't require an API key but OpenAI client needs one
+    # Use api_key from request, then placeholder
     self._client = openai.OpenAI(
-        api_key='lm-studio',
+        api_key=api_key or 'lm-studio',
         base_url=self.base_url,
     )
 
