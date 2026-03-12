@@ -18,8 +18,9 @@ This module defines all patterns and priorities for built-in providers
 in one place to avoid duplication.
 
 The ``LANGEXTRACT_LOCAL_PROVIDER`` environment variable controls which
-local provider (``ollama`` or ``lmstudio``) takes priority when model IDs
-match both.  Set to ``"ollama"`` or ``"lmstudio"`` (default: ``"lmstudio"``).
+local provider (``ollama``, ``lmstudio``, or ``omlx``) takes priority when
+model IDs match both.  Set to ``"ollama"``, ``"lmstudio"``, or ``"omlx"``
+(default: ``"lmstudio"``).
 """
 
 import os
@@ -93,3 +94,20 @@ LMSTUDIO_PATTERNS = (
     r'^lmstudio-community/',  # lmstudio-community models
 ) + _LOCAL_MODEL_PATTERNS
 LMSTUDIO_PRIORITY = 15 if _LOCAL_PROVIDER == "lmstudio" else 5
+
+# ---------------------------------------------------------------------------
+# oMLX  —  uses shared local patterns + oMLX-specific naming (capitalized, -MLX, -4bit)
+# ---------------------------------------------------------------------------
+OMLX_PATTERNS = (
+    r'^omlx/',  # omlx/model-name
+    r'^omlx:',  # omlx:model-name
+    r'.*-MLX-',  # Any model with -MLX- suffix (e.g., Qwen3.5-9B-MLX-4bit)
+    # oMLX uses capitalized model names (e.g., Qwen3.5-35B-A3B-4bit)
+    r'^Qwen',  # Qwen3-Embedding-8B, Qwen3.5-35B-A3B-4bit
+    r'^Llama',  # Llama-3.2-1B-4bit, etc.
+    r'^Gemma',  # Gemma-2-9B-4bit, etc.
+    r'^Mistral',  # Mistral-7B-4bit, etc.
+    r'^Phi',  # Phi-3-mini-4bit, etc.
+    r'^DeepSeek',  # DeepSeek-V2-4bit, etc.
+) + _LOCAL_MODEL_PATTERNS
+OMLX_PRIORITY = 15 if _LOCAL_PROVIDER == "omlx" else 5

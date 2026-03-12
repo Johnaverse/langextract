@@ -53,4 +53,9 @@ BUILTIN_PROVIDERS: list[ProviderConfig] = [
         'target': 'langextract.providers.lmstudio:LMStudioLanguageModel',
         'priority': patterns.LMSTUDIO_PRIORITY,
     },
+    {
+        'patterns': patterns.OMLX_PATTERNS,
+        'target': 'langextract.providers.omlx:OMLXLanguageModel',
+        'priority': patterns.OMLX_PRIORITY,
+    },
 ]
