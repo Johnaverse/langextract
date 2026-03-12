@@ -62,6 +62,8 @@ ENV OLLAMA_BASE_URL=http://localhost:11434/v1
 ENV OMLX_BASE_URL=http://localhost:8000/v1
 # oMLX API key (if required by your oMLX server)
 ENV OMLX_API_KEY=
+# oMLX request timeout in seconds (local models with thinking can be slow)
+ENV OMLX_TIMEOUT=600
 
 EXPOSE 8000
 

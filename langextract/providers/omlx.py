@@ -49,6 +49,7 @@ from langextract.providers import router
 _OMLX_DEFAULT_BASE_URL = os.getenv(
     'OMLX_BASE_URL', 'http://localhost:8000/v1'
 )
+_OMLX_DEFAULT_TIMEOUT = float(os.getenv('OMLX_TIMEOUT', '600'))
 
 
 @router.register(
@@ -117,6 +118,7 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
     self._client = openai.OpenAI(
         api_key=resolved_api_key,
         base_url=self.base_url,
+        timeout=_OMLX_DEFAULT_TIMEOUT,
     )
 
     super().__init__(
