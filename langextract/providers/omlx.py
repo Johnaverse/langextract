@@ -146,7 +146,6 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
       api_params = {
           'model': self.model_id,
           'messages': messages,
-          'n': 1,
       }
 
       temp = config.get('temperature', self.temperature)
