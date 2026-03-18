@@ -79,9 +79,13 @@ OPENAI_PATTERNS = (
 OPENAI_PRIORITY = 10
 
 # ---------------------------------------------------------------------------
-# Ollama  —  uses shared local patterns
+# Ollama  —  uses shared local patterns + Ollama-specific prefixes
 # ---------------------------------------------------------------------------
-OLLAMA_PATTERNS = _LOCAL_MODEL_PATTERNS
+OLLAMA_PATTERNS = (
+    r'^ollama/',  # ollama/model-name
+    r'^ollama:',  # ollama:model-name
+    r'.*-cloud',  # Cloud-hosted variants (e.g., gpt-oss:120b-cloud)
+) + _LOCAL_MODEL_PATTERNS
 OLLAMA_PRIORITY = 15 if _LOCAL_PROVIDER == "ollama" else 5
 
 # ---------------------------------------------------------------------------

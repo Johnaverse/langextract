@@ -50,6 +50,9 @@ _OMLX_DEFAULT_BASE_URL = os.getenv(
     'OMLX_BASE_URL', 'http://localhost:8000/v1'
 )
 _OMLX_DEFAULT_TIMEOUT = float(os.getenv('OMLX_TIMEOUT', '900'))
+_OMLX_DEFAULT_MAX_INPUT_TOKENS = 65536
+# Approximate characters-per-token ratio for input token estimation.
+_CHARS_PER_TOKEN_ESTIMATE = 4
 
 
 @router.register(
@@ -65,10 +68,23 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
   format_type: data.FormatType = data.FormatType.JSON
   temperature: float | None = None
   max_workers: int = 10
+  max_input_tokens: int = _OMLX_DEFAULT_MAX_INPUT_TOKENS
   _client: Any = dataclasses.field(default=None, repr=False, compare=False)
   _extra_kwargs: dict[str, Any] = dataclasses.field(
       default_factory=dict, repr=False, compare=False
   )
+
+  @property
+  def recommended_max_char_buffer(self) -> int:
+    """Recommended max_char_buffer based on max_input_tokens.
+
+    Reserves ~30% of the token budget for the prompt template, examples,
+    and system message, then converts the remaining tokens to characters.
+    """
+    if not self.max_input_tokens:
+      return 1000  # Fallback default
+    usable_tokens = int(self.max_input_tokens * 0.7)
+    return usable_tokens * _CHARS_PER_TOKEN_ESTIMATE
 
   @property
   def requires_fence_output(self) -> bool:
@@ -84,6 +100,7 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
       format_type: data.FormatType = data.FormatType.JSON,
       temperature: float | None = None,
       max_workers: int = 10,
+      max_input_tokens: int = _OMLX_DEFAULT_MAX_INPUT_TOKENS,
       api_key: str | None = None,
       **kwargs,
   ) -> None:
@@ -95,6 +112,9 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
       format_type: Output format (JSON or YAML).
       temperature: Sampling temperature.
       max_workers: Maximum number of parallel API calls.
+      max_input_tokens: Maximum input tokens allowed per request. Prompts
+        exceeding this limit will raise an error to prevent OOM. Defaults to
+        65536. Set to 0 to disable the check.
       api_key: API key for the oMLX server. Falls back to OMLX_API_KEY env var.
       **kwargs: Additional parameters passed through.
     """
@@ -112,6 +132,7 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
     self.format_type = format_type
     self.temperature = temperature
     self.max_workers = max_workers
+    self.max_input_tokens = max_input_tokens
 
     # Use api_key from request, then env var, then placeholder
     resolved_api_key = api_key or os.getenv('OMLX_API_KEY') or 'omlx'
@@ -125,6 +146,27 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
         constraint=schema.Constraint(constraint_type=schema.ConstraintType.NONE)
     )
     self._extra_kwargs = kwargs or {}
+
+  def _check_input_tokens(self, messages: list[dict[str, str]]) -> None:
+    """Raise an error if the estimated input tokens exceed the limit.
+
+    Args:
+      messages: The chat messages to check.
+
+    Raises:
+      InferenceConfigError: If estimated tokens exceed max_input_tokens.
+    """
+    if not self.max_input_tokens:
+      return
+    total_chars = sum(len(m.get('content', '')) for m in messages)
+    estimated_tokens = total_chars // _CHARS_PER_TOKEN_ESTIMATE
+    if estimated_tokens > self.max_input_tokens:
+      raise exceptions.InferenceConfigError(
+          f'Estimated input tokens ({estimated_tokens}) exceed'
+          f' max_input_tokens ({self.max_input_tokens}). This would likely'
+          ' cause an OOM on the oMLX server. Reduce the input size by'
+          ' lowering max_char_buffer or set a higher max_input_tokens limit.'
+      )
 
   def _process_single_prompt(
       self, prompt: str, config: dict
@@ -144,6 +186,8 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
       messages = [{'role': 'user', 'content': prompt}]
       if system_message:
         messages.insert(0, {'role': 'system', 'content': system_message})
+
+      self._check_input_tokens(messages)
 
       api_params = {
           'model': self.model_id,
