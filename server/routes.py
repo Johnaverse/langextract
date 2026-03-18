@@ -101,6 +101,13 @@ def extract(req: ExtractRequest) -> ExtractResponse:
 
     examples = _build_examples(req.examples)
 
+    # Build language_model_params for provider-specific options
+    language_model_params: dict = {}
+    if req.enable_thinking is not None:
+        language_model_params["enable_thinking"] = req.enable_thinking
+    if req.thinking_budget is not None:
+        language_model_params["thinking_budget"] = req.thinking_budget
+
     result = lx.extract(
         text_or_documents=text,
         prompt_description=req.prompt_description,
@@ -116,6 +123,7 @@ def extract(req: ExtractRequest) -> ExtractResponse:
         extraction_passes=req.extraction_passes,
         context_window_chars=req.context_window_chars,
         use_schema_constraints=req.use_schema_constraints,
+        language_model_params=language_model_params or None,
         show_progress=False,
         fetch_urls=False,
     )

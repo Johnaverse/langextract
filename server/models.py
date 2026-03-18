@@ -100,6 +100,23 @@ class ExtractRequest(BaseModel):
     context_window_chars: int | None = Field(default=None, ge=0)
     use_schema_constraints: bool = True
 
+    # Reasoning control for thinking models (e.g. Qwen3 via oMLX/Ollama)
+    enable_thinking: bool | None = Field(
+        default=None,
+        description=(
+            "Enable or disable reasoning/thinking for supported models. "
+            "When False, suppresses <think> blocks for faster responses."
+        ),
+    )
+    thinking_budget: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Maximum number of tokens the model can use for thinking. "
+            "Only applies when enable_thinking is True or not set."
+        ),
+    )
+
     @model_validator(mode="after")
     def _validate_input_source(self) -> "ExtractRequest":
         has_text = self.text is not None

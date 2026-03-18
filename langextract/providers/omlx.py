@@ -49,7 +49,7 @@ from langextract.providers import router
 _OMLX_DEFAULT_BASE_URL = os.getenv(
     'OMLX_BASE_URL', 'http://localhost:8000/v1'
 )
-_OMLX_DEFAULT_TIMEOUT = float(os.getenv('OMLX_TIMEOUT', '600'))
+_OMLX_DEFAULT_TIMEOUT = float(os.getenv('OMLX_TIMEOUT', '900'))
 
 
 @router.register(
@@ -170,9 +170,26 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
         if (v := config.get(key)) is not None:
           api_params[key] = v
 
+      # Reasoning control for thinking models (e.g. Qwen3).
+      # enable_thinking=False disables <think> blocks entirely;
+      # thinking_budget caps the number of thinking tokens.
+      extra_body = {}
+      if 'enable_thinking' in config:
+        extra_body['enable_thinking'] = config['enable_thinking']
+      if 'thinking_budget' in config:
+        extra_body['thinking_budget'] = config['thinking_budget']
+      if extra_body:
+        api_params['extra_body'] = extra_body
+
       response = self._client.chat.completions.create(**api_params)
 
       output_text = response.choices[0].message.content
+      if not output_text or not output_text.strip():
+        raise exceptions.InferenceOutputError(
+            'oMLX model returned an empty response. This can happen when the'
+            ' model runs out of tokens or fails to generate output. Try'
+            ' increasing max_output_tokens or using a different model.'
+        )
 
       return core_types.ScoredOutput(score=1.0, output=output_text)
 
@@ -210,6 +227,8 @@ class OMLXLanguageModel(base_model.BaseLanguageModel):
         'presence_penalty',
         'seed',
         'stop',
+        'enable_thinking',
+        'thinking_budget',
     ]:
       if key in merged_kwargs:
         config[key] = merged_kwargs[key]
